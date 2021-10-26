@@ -125,6 +125,11 @@ Furthermore, it helps readers to understand from which package a function is imp
 ### The Structure of ggplot2
 
 ![](https://raw.githubusercontent.com/z3tt/hands-on-ggplot2/main/slides/img/structure-table.png)
+```{r Exercise_1}
+chicago <- read_csv("https://raw.githubusercontent.com/z3tt/ggplot-courses/master/data/chicago-nmmaps.csv")
+glimpse(chicago)
+unique(chicago$year)
+```
 
 
 ### Data: ggplot(data)
@@ -237,6 +242,20 @@ chic <- readr::read_csv(
   + What's the problem? How could you fix it?
 
 
+```{r Exercise_2}
+theme_set(theme_light())
+
+ggplot(chicago, aes(date, temp, color = season)) +
+  geom_point()
+
+ggplot(chicago, aes(date, temp, color = factor(year))) +
+  geom_point() # without factor(year), ggplot treats year as continuous gradient, not categorical, for the colour legend
+
+ggplot(chicago, aes(date, temp, color = season, group = year)) +
+  geom_line() # oh no, without group = year, ggplot connects seasons by line between years
+
+```
+
 ## Saving a `ggplot`
 
 You can export your plot via the `ggsave()` function:
@@ -244,11 +263,11 @@ You can export your plot via the `ggsave()` function:
 ```{r ggsave, eval=FALSE}
 ggsave(filename = "my_ggplot.pdf", 
        width = 10, height = 7, 
-       device = cairo_pdf)
+       device = cairo_pdf) # for saving pdf (or .svg) which are vector graphics, dont get pixelated
 
 ggsave(filename = "my_ggplot.png", 
        width = 10, height = 7, 
-       dpi = 700)
+       dpi = 700) # for saving png. png is a raster graphic tho which becomes pixelated
 ```
 
 ![Source: canva.com](https://raw.githubusercontent.com/z3tt/hands-on-ggplot2/main/slides/img/canva_vector.png)
@@ -332,7 +351,8 @@ data
 
 You could also load, for example, JSON or Excel files with the same function:
 
-```{r data-rio-json}
+# json file is missing, so below is commented out
+#```{r data-rio-json}
 data_json <- rio::import(here::here("data", "crypto_cleaned.json"))
 
 data_json <- as_tibble(data_json) ## somehow `setclass` doesn't work with json

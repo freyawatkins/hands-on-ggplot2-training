@@ -45,6 +45,7 @@ ggplot(data, aes(date, close, color = currency)) +
 ```
 
 Many of the geom's can further adjusted:
+e.g if we don't want to stack them, use the position = dodge argument to (here) put them on top of each other.
 
 ```{r area-dodge}
 ggplot(data, aes(date, close, color = currency)) +
@@ -59,7 +60,7 @@ ggplot(data, aes(date, close, color = currency)) +
 ```{r area-fill-no-exp}
 ggplot(data, aes(date, close, color = currency)) +
   geom_area(aes(fill = currency), alpha = .5, position = "fill") +
-  coord_cartesian(expand = FALSE)
+  coord_cartesian(expand = FALSE) # removes whitespace on x and y axes
 ```
 
 ### Box Plots
@@ -68,14 +69,14 @@ Some geom's drastically change the appearance of the data:
 
 ```{r boxplot}
 ggplot(data, aes(close, currency)) +
-  geom_boxplot()
+  geom_boxplot() # calculates median & IQR to show 50% in box by default, plus whiskers with outliers etc
 ```
 
 And, as you already know, we can combine geom's to make the plot more insightful:
 
 ```{r boxplot-dots}
 ggplot(data, aes(close, currency)) +
-  geom_boxplot(outlier.alpha = 0, color = "grey60", size = 1) + 
+  geom_boxplot(outlier.alpha = 0, color = "grey60", size = 1) + #makes boxplot transparent!
   geom_point(alpha = .2)
 ```
 
@@ -87,7 +88,7 @@ And also the point geom can be adjusted, e.g. adding some random noise called **
 ```{r boxplot-jitter}
 ggplot(data, aes(close, currency)) +
   geom_boxplot(outlier.alpha = 0, color = "grey60", size = 1) + 
-  geom_point(alpha = .2, position = position_jitter(height = .2))
+  geom_point(alpha = .2, position = position_jitter(height = .2)) # moves points nicely
 ```
 
 
@@ -151,6 +152,7 @@ ggplot(data, aes(open, close)) +
 ```
 
 Actually, the fill is mapped to a hidden summary statistic that is calculated by `{ggplot2}`:
+i.e. ..count..
 
 ```{r rect-count}
 ggplot(data, aes(open, close)) +
@@ -217,7 +219,7 @@ Other methods such as method = "lm" (without an explicit formula) for simple lin
 ### Calculate Summaries
 
 Without pre-calculations one can easily plot data summaries:
-
+Means you don't have to create your own summary tables with means + SE first.
 ```{r stats-summary}
 ggplot(data, aes(currency, close)) +
   stat_summary()
@@ -373,6 +375,41 @@ There are several other statistical transformations available:
 class: center, middle, inverse
 
 ![Collection of some chart types provided by ggplot2 extension packages](https://raw.githubusercontent.com/z3tt/hands-on-ggplot2/main/slides/img/extensions.png)
+```{r Exercise-1}
+passwords <- read_csv("https://raw.githubusercontent.com/Z3tt/ggplot-courses/master/data/passwords.csv")
+glimpse(passwords)
+
+passwords %>% count(category) %>% 
+  ggplot(aes(category, n)) +
+  geom_col()
+
+# OR
+
+ggplot(passwords, aes(category)) +
+  geom_bar()  
+# stat = "count" is default
+
+# sort the bars by n
+pw_count <- count(passwords, category)
+
+ggplot(pw_count, aes(fct_reorder(category, -n), n)) +
+  geom_col() +
+  geom_text(aes(label = n), vjust = -.6, size = 6) + # add text labels with geom_text
+  scale_y_continuous(limits = c(NA, 210), expand = c(0, 0)) 
+
+# ...or with stat_count instead of geom_text() without requiring summary dataset first
+ggplot(passwords, aes(category)) +
+  stat_count() +
+  stat_count(geom = "text", aes(label = ..count..), vjust = -.6, size = 6) +
+  scale_y_continuous(limits = c(NA, 210), expand = c(0, 0))
+
+# or indeed with stat_summary(), but this is the most complex and least common way to do this
+ggplot(passwords, aes(category, 1)) +
+  stat_summary(geom = "bar", fun = length) +
+  stat_summary(geom = "text", aes(label = ..y..), fun = length, vjust = -.6, size = 6) +
+  scale_y_continuous(limits = c(NA, 210), expand = c(0, 0))
+
+```
 
 
 ## Spatial Maps
@@ -408,7 +445,8 @@ The `{rnaturalearth}` allows downloading the Natural Earth data sets in simple f
 
 ```{r rnatural-earth-download}
 sf_world <- ne_countries(returnclass = "sf")
-sf_airports <- ne_download(scale = 'large', category = "cultural", type = "airports", returnclass = "sf")
+# sf_airports <- ne_download(scale = "large", category = "cultural", type = "airports", returnclass = "sf")
+# having server issues, all chunks from here to the end are therefore include = F bc data won't download
 
 tibble::glimpse(sf_world)
 ```
@@ -420,27 +458,29 @@ tibble::glimpse(sf_world)
 
 ```{r first-map}
 ggplot(sf_world) +
-  geom_sf()
+  geom_sf() # no need for X and Y because obvious plotting long and lat.
+
+
 ```
 
 `geom_sf()` works with all types of vector data and returns geometries depending on the simple features:
 
-```{r sf-polygon-point}
+```{r sf-polygon-point, include = F}
 ggplot(sf_world) +
-  geom_sf() +
-  geom_sf(data = sf_airports)
+  geom_sf() #+
+ # geom_sf(data = sf_airports) # need to specify data as first argument, to plot airports on top.
 ```
 
-```{r first-map-colors}
+```{r first-map-colors, include= F}
 ggplot(sf_world) +
-  geom_sf(color = "forestgreen", alpha = .4) +
-  geom_sf(data = sf_airports, color = "purple", alpha = .4)
+  geom_sf(color = "forestgreen", alpha = .4) #+ # color outline
+  #geom_sf(data = sf_airports, color = "purple", alpha = .4) # plots purple points of airpoint data
 ```
 
 Generate simple features objects e.g. to highlight a location:
 
 ```{r data-locator}
-sf_bln <- sf::st_sfc(sf::st_point(c(13.4050, 52.5200)), crs = sf::st_crs(sf_world))
+sf_bln <- sf::st_sfc(sf::st_point(c(13.4050, 52.5200)), crs = sf::st_crs(sf_world)) # longlat data, we can use the geometry of the world to define it. 
 
 sf_bln
 ```
@@ -448,7 +488,7 @@ sf_bln
 ```{r first-map-locator}
 ggplot(sf_world) +
   geom_sf(color = NA) +
-  geom_sf(data = sf_bln, shape = 21, color = "firebrick", fill = NA, size = 5, stroke = 2)
+  geom_sf(data = sf_bln, shape = 21, color = "firebrick", fill = NA, size = 5, stroke = 2) # one dot is the data
 ```
 
 
@@ -459,12 +499,13 @@ ggplot(sf_world) +
 
 ```{r first-map-fill-economy}
 ggplot(sf_world) +
-  geom_sf(aes(fill = economy))
+  geom_sf(aes(fill = economy)) # we can map other values to the fill 
+ 
 ```
 
 ```{r first-map-color}
 ggplot(sf_world) +
-  geom_sf(aes(fill = economy), color = "white", size = .2)
+  geom_sf(aes(fill = economy), color = "white", size = .2) # add white lines
 ```
 
 
@@ -474,26 +515,26 @@ Use `coord_sf()` to change the projection without changing the spatial data set!
 
 ```{r first-map-proj-moll}
 ggplot(sf_world) +
-  geom_sf(aes(fill = economy), color = "white", size = .2) +
-  coord_sf(crs = "+proj=moll")
+  geom_sf(aes(fill = economy), color = "white", size = .2) + 
+  coord_sf(crs = "+proj=moll") # change projection on the fly
 ```
 
 ```{r first-map-proj-custom1}
 ggplot(sf_world) +
   geom_sf(aes(fill = economy), color = "white", size = .2) +
-  coord_sf(crs = "+proj=laea +x_0=0 +y_0=0 +lon_0=0 +lat_0=0")
+  coord_sf(crs = "+proj=laea +x_0=0 +y_0=0 +lon_0=0 +lat_0=0") # globe-like projection
 ```
 
 ```{r first-map-proj-custom2}
 ggplot(sf_world) +
   geom_sf(aes(fill = economy), color = "white", size = .2) +
-  coord_sf(crs = "+proj=laea +x_0=0 +y_0=0 +lon_0=-30 +lat_0=-25")
+  coord_sf(crs = "+proj=laea +x_0=0 +y_0=0 +lon_0=-30 +lat_0=-25") # turn it around
 ```
 
 ```{r first-map-proj-custom3}
 ggplot(sf_world) +
   geom_sf(aes(fill = economy), color = "white", size = .2) +
-  coord_sf(crs = "+proj=laea +x_0=0 +y_0=0 +lon_0=-70 +lat_0=0")
+  coord_sf(crs = "+proj=laea +x_0=0 +y_0=0 +lon_0=-70 +lat_0=0") # failed visualisation here. 
 ```
 
 ---
@@ -502,6 +543,26 @@ ggplot(sf_world) +
 
 * Download data set(s) for your home country and plot it/them.
 * Change the projection with `coord_sf` and observe how the spatial mapping changes.
+
+```{r Exercise-2}
+sf_germany <- rnaturalearth::ne_countries(country = "Germany", returnclass = "sf")
+# sf_germany_hd <- rnaturalearth::ne_countries(country = "Germany", scale = 10, returnclass = "sf")
+# requires {rnaturalearthhires}, server issue installing from source
+
+class(sf_germany)
+names(sf_germany)
+
+ggplot(sf_germany) +
+  geom_sf(fill = "#CBE7BE") # sf_germany_hd would be much more accurate
+
+ggplot(sf_germany) +
+  geom_sf(fill = "#CBE7BE") +
+  geom_sf(data = sf_bln, size = 5) + # add berlin point
+  coord_sf(crs = "+proj=moll") # change projection
+
+
+
+```
 
 ---
 

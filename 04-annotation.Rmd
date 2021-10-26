@@ -38,7 +38,7 @@ There are multiple ways to add labels:
 ```{r structure-labs-alt}
 ggplot(data, aes(date, close, color = currency)) +
   geom_line() + 
-  xlab(NULL) + 
+  xlab(NULL) + # we can use xlab() but this method is more laborious than using labs() for all
   # scale_x_date(name = NULL) +
   ylab("Closing Price") +
   # scale_y_continuous(name = "Closing Price") +
@@ -82,6 +82,7 @@ library(ggtext)
 ggplot(data, aes(date, close, color = currency)) +
   geom_line() + 
   labs(title = "Performance of the **Top 4 Cryptocurrencies**", caption = "Data: *CoinMarketCap.com*")
+# ok but **s are showing up on the graph instead of bolding - this is why we need ggtext theme call, see next chunk
 ```
 
 ```{r ggtext-showcase}
@@ -95,7 +96,7 @@ ggplot(data, aes(date, close, color = currency)) +
 ggplot(data, aes(date, close, color = currency)) +
   geom_line() + 
   labs(title = "Performance of the <b style='font-size:34pt;'>Top 4 Cryptocurrencies ", 
-       caption = "<span style='color:firebrick;'>Data:</span> <i>CoinMarketCap.com</i>") +
+       caption = "<span style='color:firebrick;'>Data:</span> <i>CoinMarketCap.com</i>") + # can use html too
   theme(plot.title = element_markdown(), plot.caption = element_markdown())
 ```
 
@@ -352,7 +353,7 @@ ggplot(outliers, aes(close, open)) +
     hjust = 0,
     nudge_x = 5,
     nudge_y = -5
-  )
+  ) # moving them all the same way though is not very helpful
 ```
 
 ```{r geom-text-outlier-adj-limits}
@@ -507,12 +508,12 @@ g +
   ggforce::geom_mark_hull(
     aes(label = species,
         filter = species == "Adelie") 
-  ) +
+  ) + # this doesn't seem to work??
   coord_cartesian( 
     xlim = c(165, NA),
     ylim = c(25, NA)
   ) +
-  theme(legend.position = "none")
+  theme(legend.position = "none") 
 ```
 
 
@@ -520,7 +521,7 @@ g +
 
 ### Add Images via `annotation_custom() ` 
 
-`magick::image_read()` allows to directly store images from the web in `R`:
+`magick::image_read()` allows us to directly store images from the web in `R`:
 
 ```{r annotation-custom-img-prep}
 #install.packages("magick")
@@ -572,13 +573,13 @@ ggplot(data, aes(date, close, color = currency)) +
     grid::rasterGrob(
         image = img,
         x = .5,
-        y = -.25,
+        y = -.25, # now we can plot the image below the plot
         width = .9 
     ) 
   ) +
   geom_line(size = .8) +
   coord_cartesian(clip = "off") +
-  theme(plot.margin = margin(12, 12, 130, 12))
+  theme(plot.margin = margin(12, 12, 130, 12)) # create negative space (top, right, bottom, left TRBL)
 ```
 
 
@@ -638,6 +639,33 @@ cowplot::ggdraw(g) +
 
 * Play around with the two different approaches and how they differ in placing and scaling the images.
 * **Bonus:** Write a function that lets you add your company's logo to a ggplot object.
+
+```{r Exercise-2}
+add_logo <- function(g) {
+  url <- "https://upload.wikimedia.org/wikipedia/en/thumb/3/35/Pearson_logo.svg/1280px-Pearson_logo.svg.png"
+  logo <- magick::image_read(url)
+  
+  g <- g +
+    theme(plot.margin = margin(12, 12, 45, 12))
+  
+  plot <- 
+    cowplot::ggdraw(g) +
+    cowplot::draw_image(
+      logo,  
+      scale = .2, 
+      x = 1,
+      hjust = 1, 
+      halign = 1, 
+      valign = 0
+     )
+  
+  return(plot)
+}
+
+my_plot <- ggplot(data, aes(close, open)) + 
+  geom_point()
+add_logo(my_plot)
+```
 
 ---
 
